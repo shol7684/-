@@ -24,9 +24,9 @@ const drawBox = ()=>{
 drawBox();
 
 const targetSizeArr = [
-  [13,15,18], // 감소3
-  [11,13,16], // 감소2
-  [8,10,13], // 난이도감소없음
+  [10,12,14], // 감소3
+  [9,11,13], // 감소2
+  [6,8,10], // 난이도감소없음
 ]
 
 const speed = [
@@ -37,8 +37,8 @@ const speed = [
 
 
 const target = (()=>{
-  const range =  0.9;
-  const min = boxX + 10;
+  // const range =  0.9;
+  // const min = boxX + 10;
   let coordinates = [];
   let randomSize = [];
 
@@ -361,7 +361,6 @@ const gameover = ()=>{
   arrow.stop();
   window.removeEventListener("keydown", keydownListener);
   gameTimer.stop();
-  console.log("over");
 }
 
 
