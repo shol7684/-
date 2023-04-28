@@ -1,31 +1,18 @@
 
-// const current = document.querySelector(".current");
-// const difficultyCheckboxs = document.querySelectorAll("input[type=radio]");
-
-// const sizeArr = [
-//   [5,10,15],
-//   [15,20,25],
-//   [13,10,12],
-// ]
-
-// const SUCESS_COLOR =  'rgb(16, 158, 208)' //'#109ed0';
-
-
-
 let level = 0;
 
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
-// 22.4%
-// const boxWidth = 275;
-const r = 0.8;
+const r = 0.8; // 화면비율
 
 const boxWidth = 430 * r;
 const boxHeight = 20 * r;
-const boxX =15;
+const boxX =50;
 const boxY = 110;
 
-// 박스
+canvas.width = boxWidth + 100
+
+
 const drawBox = ()=>{
   context.beginPath();
   context.fillStyle = '#33291d';
@@ -36,16 +23,10 @@ const drawBox = ()=>{
 
 drawBox();
 
-
-// 난이도 감소 없음 2초
-
-// 난이도 감소 3 2.5초
-
-
 const targetSizeArr = [
-  [15,18,13,13], // 감소3
-  [7,9,11], // 감소2
-  [3,5,7], // 난이도감소없음
+  [13,15,18], // 감소3
+  [11,13,16], // 감소2
+  [8,10,13], // 난이도감소없음
 ]
 
 const speed = [
@@ -54,23 +35,40 @@ const speed = [
   2000  // x
 ]
 
-const randomSize = [];
-
-
-
 
 const target = (()=>{
-  const range =  0.8;
-  const min = 20;
+  const range =  0.9;
+  const min = boxX + 10;
   let coordinates = [];
+  let randomSize = [];
 
   return {
-    createCoordinates : ()=>{
+    create : ()=>{
       const arr = [];
-      for(i=0;i<3;i++) {
-        arr.push(Math.random() * (boxWidth / 3 * range - min) +  boxWidth / 3 * i + min);
+
+      for(let i=0;i<3;i++) {
+        const start = boxWidth / 3 * i;
+        const end = boxWidth /3 * (i+1);
+        const min = (start) + (boxWidth/3) * 0.1 ;
+        const max = end * 0.9;
+    
+        arr.push(Math.random() * (max - min) + min + boxX);
       }
+
       coordinates = arr;
+
+
+      let temp = [0,1,2];
+      const size = temp.map((e, i)=>{
+        const index = temp[Math.floor(Math.random() * temp.length)];
+        temp = temp.filter((e,i)=>{
+          return e !== index;
+        })
+      
+        return targetSizeArr[level][index]; 
+      })
+      
+      randomSize = size;
     },
 
     draw : ()=>{
@@ -81,10 +79,24 @@ const target = (()=>{
       })
     },
 
-    coordinates : ()=>{
-      return coordinates
-    },
+    successCheck : ()=>{
+      const current = arrow.current();
+      let success = false;
 
+      coordinates.forEach((e, i)=>{
+        if(e <= current && current <= e+ randomSize[i] ) {
+          randomSize[i] = 0;
+          coordinates[i] = 0;
+    
+          drawBox();
+          target.draw();
+          success = true;
+        }
+      })
+
+
+      return success;
+    }
   }
 
 })();
@@ -131,7 +143,6 @@ const arrow = (()=>{
       }
     },
     stop : ()=>{
-      console.log("intervalID ", intervalID, "정지");
       clearInterval(intervalID);
     },
 
@@ -163,29 +174,32 @@ const arrow = (()=>{
 let stop = false;
 const keydownListener = (e)=>{
   
-  console.log(stop);
   // spacebar
   if(e.keyCode !== 32) return;
-
-  if(stop === true) {
-    console.log("return");
-    return;
-  }
+  if(stop) return;
 
   stop = true;
 
   arrow.stop();
-  const success = successCount.successCheck();
+  const success = target.successCheck();
 
-  console.log(success);
-
-  if(success) {
-    keyid = setTimeout(()=>{
-      arrow.repeat();
-  
-      stop = false;
-    },1000);
+  if(!success) {
+    gameover();
+    return;
   }
+
+  const count = successCount.success();
+  if(count === 0) {
+    gameover();
+    return;
+  }
+  
+
+  setTimeout(()=>{
+    arrow.repeat();
+
+    stop = false;
+  },1000);
 
 
 }
@@ -221,10 +235,7 @@ const gameTimer = (()=> {
         c--;
         if(c < 0 ) {
           gameTimer.stop();
-          
           gameover();
-
-
           return;
         }
 
@@ -237,8 +248,7 @@ const gameTimer = (()=> {
     reset : ()=>{
       
     }
-
-     }
+  }
 })();
 
 
@@ -254,7 +264,7 @@ const successCount = (()=>{
   return {
     reset : ()=>{
       count = 3;
-        successCount.clear();
+      successCount.clear();
       successCount.draw();    
     },
     clear : ()=>{
@@ -272,35 +282,10 @@ const successCount = (()=>{
     },
     success : ()=>{
       count--;
-    },
+      successCount.clear();
+      successCount.draw();
 
-    successCheck : ()=>{
-      const current = arrow.current();
-      const coordinates = target.coordinates();
-    
-      let success = false;
-
-      coordinates.forEach((e, i)=>{
-        if(e <= current && current <= e+ randomSize[i] ) {
-          randomSize[i] = 0;
-          coordinates[i] = 0;
-    
-          drawBox();
-          target.draw();
-          count--;
-          successCount.clear();
-          successCount.draw();
-          success = true;
-        }
-      })
-
-      if(!success || count === 0) {
-        gameover();
-        return false;
-       }
-
-      return true;
-
+      return count;
     },
   }
 
@@ -362,7 +347,7 @@ const startCount = (()=>{
 
 
 const gameStart = ()=>{
-  target.createCoordinates();
+  target.create();
   target.draw();
 
   arrow.repeat();
@@ -376,53 +361,8 @@ const gameover = ()=>{
   arrow.stop();
   window.removeEventListener("keydown", keydownListener);
   gameTimer.stop();
+  console.log("over");
 }
-
-
-
-
-const test = (()=>{
-  let a = [1,2];
-  console.log("test");
-  return {
-    a : a,
-    b : ()=>{
-      a++;
-    },
-    c : ()=>{
-      console.log(a);
-    }
-  }
-
-})();
-
-
-
-console.log(test.a);
-
-
-console.log(test.a);
-console.log(test.a);
-
-let cc = test.a;
-
-console.log(cc);
-
-cc[2]=5;
-
-// console.log(test.a);
-
-// context.beginPath()
-// context.fillStyle = 'red'
-// context.roundRect(10,10,10,10,5);
-// context.closePath();
-// context.fill();
-
-// context.beginPath()
-// context.fillStyle = 'green'
-// context.roundRect(30,10,10,10,5);
-// context.closePath();
-// context.fill();
 
 
 
@@ -438,13 +378,7 @@ startButton.addEventListener("click", (e)=>{
   
   document.querySelectorAll("input[type=radio]").forEach((e)=>{
     if(e.checked) {
-      console.log("난이도", e.value);
       level = e.value;
-      for(i=0;i<3;i++) {
-        const r = Math.floor(Math.random() * targetSizeArr[e.value].length);
-        randomSize[i] = targetSizeArr[e.value][r];
-
-      }
     }
   })
 
@@ -452,7 +386,5 @@ startButton.addEventListener("click", (e)=>{
   drawBox();
 
   startCount.start();
-  
- 
- 
 })
+
